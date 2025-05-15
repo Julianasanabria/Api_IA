@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const ConversationSchema = new mongoose.Schema({
   speaker: { type: String, enum: ['expert1', 'expert2'], required: true },
