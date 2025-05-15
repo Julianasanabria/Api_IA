@@ -1,4 +1,4 @@
-import Articulos from "../models/categorias.js";
+import Articulos from "../models/conversacion.js";
 
 const httpArticulos = {
   getArticulos: async (req, res) => {

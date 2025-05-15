@@ -1,7 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import { GoogleGenAI } from "@google/genai";
-import categorias from "./routes/categorias.js"
+import categorias from "./routes/conversacion.js"
 import articulos from "./routes/articulos.js"
 
 import "dotenv/config";
