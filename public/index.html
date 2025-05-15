@@ -1,11 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Diálogo entre Expertos</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <h1>Adso Socorro</h1>
+    <div class="container">
+        <h1>Diálogo entre Expertos</h1>
+        <div class="selectors">
+            <select id="expert1">
+                <option value="Cientifico">Cientifico</option>
+                <option value="Filosofo">Filosofo</option>
+                <option value="Psicologo">Psicologo</option>
+            </select>
+            <select id="expert2">
+                <option value="Cientifico">Cientifico</option>
+                <option value="Filosofo">Filosofo</option>
+                <option value="Psicologo">Psicologo</option>
+            </select>
+            <select id="expert3">
+                <option value="Cientifico">Cientifico</option>
+                <option value="Filosofo">Filosofo</option>
+                <option value="Psicologo">Psicologo</option>
+            </select>
+        </div>
+        <div id="chat" class="chat-box"></div>
+        <div class="buttons">
+            <button id="respuesta1" class="btn blue">Respuesta Experto 1</button>
+            <button id="respuesta2" class="btn red">Respuesta Experto 2</button>
+            <button id="respuesta3" class="btn pink">Respuesta Experto 3</button>
+            <button id="limpiar" class="btn gray">Limpiar Historial</button>
+            <button id="pdf" class="btn green">Exportar a PDF</button>
+        </div>
+    </div>
+    <script src="./script.js"></script>
 </body>
 </html>

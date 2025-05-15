@@ -1,5 +1,5 @@
 {
-  "name": "socorro-estructura",
+  "name": "dd",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google/genai": "^0.13.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "mongoose": "^8.14.1"
