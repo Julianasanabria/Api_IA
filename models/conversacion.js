@@ -1,12 +1,9 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
-const Schema = mongoose.Schema;
-const ObjectId = Schema.ObjectId;
-
-const categoriasEsquema = new Schema({
-    codigo:{type:String,uniqued:true},
-    nombre:{type:String},
-    createdAt:{type:Date, default:Date.now}
+const ConversationSchema = new mongoose.Schema({
+  speaker: { type: String, enum: ['expert1', 'expert2'], required: true },
+  message: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
 });
 
-export default mongoose.model("Categoria",categoriasEsquema)
+module.exports = mongoose.model('Conversation', ConversationSchema);

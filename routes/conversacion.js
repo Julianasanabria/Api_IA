@@ -1,17 +1,10 @@
-import Router from "express"
+const express = require('express');
+const router = express.Router();
+const conversationController = require('../controllers/conversationController');
 
-import { deleteCategoriasId, getCategorias, getCategoriasId, postCategorias, putCategoriasId } from "../controllers/categorias.js"
+router.get('/history', conversationController.getConversationHistory);
+router.post('/expert1', conversationController.generateExpert1Response);
+router.post('/expert2', conversationController.generateExpert2Response);
+router.delete('/clear', conversationController.clearHistory);
 
-const router = Router()
-
-router.get("/", getCategorias )
-
-router.get("/:id",getCategoriasId)
-
-router.post("/",postCategorias)
-
-router.put("/:id",putCategoriasId)
-
-router.delete("/:id",deleteCategoriasId)
-
-export default router
+module.exports = router;

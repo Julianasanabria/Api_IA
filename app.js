@@ -1,33 +1,20 @@
-import express from "express";
-import mongoose from "mongoose";
-import { GoogleGenAI } from "@google/genai";
-import categorias from "./routes/conversacion.js"
-import articulos from "./routes/articulos.js"
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db');
+const conversationRoutes = require('./routes/conversationRoutes');
 
-import "dotenv/config";
+dotenv.config();
+connectDB();
 
 const app = express();
 
-app.use(express.json())
-app.use(express.static("public"))
-app.use("/api/categorias",categorias)
-app.use("/api/articulos",articulos)
+app.use(cors());
+app.use(express.json());
 
-const inteligenciaGemini = new GoogleGenAI({ apiKey: "AIzaSyBIliyZgyuVHWS-9ZVtaLmJY6Asg9xbkcQ" });
+app.use('/api/conversations', conversationRoutes);
 
-async function main() {
-  const response = await inteligenciaGemini.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: "Explain how AI works in a few words",
-  });
-  console.log(response.text);
-}
-
-await main();
-
-app.listen(process.env.PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${process.env.PORT}`);
-  mongoose
-    .connect("mongodb://127.0.0.1:27017/adso076")
-    .then(() => console.log("BASE DE DATOS CONECTADA!"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
