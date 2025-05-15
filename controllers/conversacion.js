@@ -1,8 +1,8 @@
-const Conversation = import('../models/conversacion.js');
-const axios = import('axios');
+import conversacion from '../models/conversacion.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Prompts base para los expertos
-const communistExpertPrompt = `Actúa como un Científico experto de renombre internacional en el campo de la Neurociencia Cognitiva. Tu especialización abarca la comprensión de la función y la capacidad del cerebro humano en su totalidad, lo que implica un profundo conocimiento de los mecanismos que subyacen a la cognición, la emoción y el comportamiento humano.
+const cientificoExpertPrompt = `Actúa como un Científico experto de renombre internacional en el campo de la Neurociencia Cognitiva. Tu especialización abarca la comprensión de la función y la capacidad del cerebro humano en su totalidad, lo que implica un profundo conocimiento de los mecanismos que subyacen a la cognición, la emoción y el comportamiento humano.
 
 Posees un doctorado (PhD) de la Universidad de Stanford, una de las instituciones más prestigiosas del mundo, y has realizado investigaciones postdoctorales en el Instituto Salk para Estudios Biológicos, donde has contribuido a avances significativos en la comprensión de la neurobiología. Has publicado extensamente en revistas científicas de alto impacto como Nature, Science y Neuron, y tus trabajos son fundamentales para la comprensión del potencial cerebral y su relación con la cognición y el comportamiento.
 
@@ -31,7 +31,7 @@ Puedes mencionar brevemente las investigaciones actuales sobre la plasticidad ce
 Mantén la coherencia y la lógica en tu razonamiento, proporcionando una explicación clara y accesible que no solo corrija el mito del 10% del cerebro, sino que también explique de manera realista las implicaciones de una mayor eficiencia en la utilización de la capacidad cerebral. Tu objetivo es proporcionar una respuesta clara, concisa y basada en la evidencia científica, que no solo informe, sino que también inspire a otros a explorar el fascinante mundo de la neurociencia cognitiva.
 `;
 
-const conservativeExpertPrompt = `
+const psicologoExpertPrompt = `
 "Actúa como un Psicólogo cognitivo y neurocientífico de renombre internacional, con una profunda experiencia en el estudio de las capacidades cognitivas humanas, el potencial del aprendizaje y la relación entre la función cerebral y el comportamiento. Tu investigación se ha centrado en comprender los límites y el alcance de las habilidades cognitivas, la plasticidad cerebral y los mitos populares sobre el funcionamiento de la mente.
 
 Posees un doctorado (PhD) en Psicología Cognitiva con especialización en Neurociencia Cognitiva de la Universidad de Chicago y has realizado investigaciones postdoctorales en el Instituto de Neurociencia Cognitiva de la University College London (UCL). Has publicado numerosos artículos influyentes en revistas de alto impacto como Psychological Science, Cognitive Psychology y Trends in Cognitive Sciences, y eres una autoridad respetada en la desmitificación de conceptos erróneos sobre el cerebro y la cognición.
@@ -57,66 +57,78 @@ Mantén la coherencia y la lógica en tu razonamiento, proporcionando una perspe
 Tu objetivo es ofrecer una respuesta perspicaz y fundamentada que corrija malentendidos comunes y explore las implicaciones reales, desde una perspectiva psicológica, de un aumento significativo en la eficiencia de la utilización de los recursos cerebrales."
 `;
 
+const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+const model = genAi.getGenerativeModel({model: 'gemini-pro'});
 // Función simulada para llamar a Gemini (puedes reemplazar con llamada real)
 async function callGeminiAPI(prompt) {
-  // En práctica debes llamar la API real. Aquí retorno mock.
-  return `Respuesta generada para el prompt:\n${prompt.substring(0, 100)}...`;
-}
-
-// Obtener historial completo de la conversación
-exports.getConversationHistory = async (req, res) => {
   try {
-    const history = await Conversation.find().sort({ timestamp: 1 });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text(); 
+    } catch (error) {
+      console.log('Error en Gemini:', error);
+      throw new Error('Error en la llamada a Gemini API');
+  }
+
+}
+const conversacionController = {
+// Obtener historial completo de la conversación
+getConversationHistory :async (req, res) => {
+  try {
+    const history = await conversacion.find().sort({ timestamp: 1 });
     res.json(history);
   } catch (err) {
     res.status(500).json({ error: 'Error obteniendo historial' });
   }
-};
+},
 
 // Generar respuesta para experto 1
-exports.generateExpert1Response = async (req, res) => {
+generateExpert1Response :async (req, res) => {
   try {
-    const history = await Conversation.find().sort({ timestamp: 1 });
+    const history = await conversacion.find().sort({ timestamp: 1 });
     // Crear historial en texto para el prompt
     const historyText = history.map(entry => `${entry.speaker}: ${entry.message}`).join('\n');
-    const prompt = communistExpertPrompt.replace('{{conversationHistory}}', historyText);
+    const prompt = cientificoExpertPrompt.replace('{{conversationHistory}}', historyText);
 
     const answer = await callGeminiAPI(prompt);
 
     // Guardar en BD
-    const conversationEntry = new Conversation({ speaker: 'expert1', message: answer });
+    const conversationEntry = new conversacion({ speaker: 'expert1', message: answer });
     await conversationEntry.save();
 
     res.json(conversationEntry);
   } catch (err) {
     res.status(500).json({ error: 'Error generando respuesta experto 1' });
   }
-};
+},
 
 // Generar respuesta para experto 2
-exports.generateExpert2Response = async (req, res) => {
+generateExpert2Response : async (req, res) => {
   try {
-    const history = await Conversation.find().sort({ timestamp: 1 });
+    const history = await conversacion.find().sort({ timestamp: 1 });
     const historyText = history.map(entry => `${entry.speaker}: ${entry.message}`).join('\n');
-    const prompt = conservativeExpertPrompt.replace('{{conversationHistory}}', historyText);
+    const prompt = psicologoExpertPrompt.replace('{{conversationHistory}}', historyText);
 
     const answer = await callGeminiAPI(prompt);
 
-    const conversationEntry = new Conversation({ speaker: 'expert2', message: answer });
+    const conversationEntry = new conversacion({ speaker: 'expert2', message: answer });
     await conversationEntry.save();
 
     res.json(conversationEntry);
   } catch (err) {
     res.status(500).json({ error: 'Error generando respuesta experto 2' });
   }
-};
+},
 
 // Limpiar todo el historial
-exports.clearHistory = async (req, res) => {
+clearHistory : async (req, res) => {
   try {
-    await Conversation.deleteMany({});
+    await conversacion.deleteMany({});
     res.json({ message: 'Historial limpiado correctamente' });
   } catch (err) {
     res.status(500).json({ error: 'Error limpiando historial' });
   }
+}
 };
+// Exportar el controlador
+export default conversacionController;

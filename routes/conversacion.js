@@ -1,11 +1,11 @@
-import Router from 'express';
+import {Router} from 'express';
 const router = Router();
-const conversationController = require('../controllers/conversacion.js');
+import conversacionController from '../controllers/conversacion.js';
 
-router.get('/history', conversationController.getConversationHistory);
-router.post('/expert1', conversationController.generateExpert1Response);
-router.post('/expert2', conversationController.generateExpert2Response);
-router.delete('/clear', conversationController.clearHistory);
+router.get('/history', conversacionController.getConversationHistory);
+router.post('/expert1', conversacionController.generateExpert1Response);
+router.post('/expert2', conversacionController.generateExpert2Response);
+router.delete('/clear', conversacionController.clearHistory);
 
-module.exports = router;
+export default router;
 
