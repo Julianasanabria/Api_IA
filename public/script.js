@@ -24,7 +24,7 @@ function limpiarChat() {
 // Llama a la API para obtener el historial y mostrarlo al cargar
 async function cargarHistorial() {
     limpiarChat();
-    const res = await fetch('/api/conversations/history');
+    const res = await fetch('/api/history');
     const data = await res.json();
     data.forEach(msg => {
         agregarMensaje(msg.message, msg.speaker === 'expert1' ? 1 : 2);
@@ -33,14 +33,14 @@ async function cargarHistorial() {
 
 // Llama a la API para obtener respuesta del experto 1
 btn1.onclick = async () => {
-    const res = await fetch('/api/conversations/expert1', { method: 'POST' });
+    const res = await fetch('/api/expert1', { method: 'POST' });
     const data = await res.json();
     agregarMensaje(data.message, 1);
 };
 
 // Llama a la API para obtener respuesta del experto 2
 btn2.onclick = async () => {
-    const res = await fetch('/api/conversations/expert2', { method: 'POST' });
+    const res = await fetch('/api/expert2', { method: 'POST' });
     const data = await res.json();
     agregarMensaje(data.message, 2);
 };

@@ -1,4 +1,4 @@
-import conversacion from '../models/conversacion.js';
+import Conversacion from '../models/conversacion.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Prompts base para los expertos
@@ -75,7 +75,7 @@ const conversacionController = {
 // Obtener historial completo de la conversación
 getConversationHistory :async (req, res) => {
   try {
-    const history = await conversacion.find().sort({ timestamp: 1 });
+    const history = await Conversacion.find().sort({ timestamp: 1 });
     res.json(history);
   } catch (err) {
     res.status(500).json({ error: 'Error obteniendo historial' });

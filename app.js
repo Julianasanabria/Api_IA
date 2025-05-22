@@ -1,21 +1,31 @@
 import express from 'express';
 import mongoose from 'mongoose';
-
 import conversacion from './routes/conversacion.js';
-
-
 import "dotenv/config";
-import 'models/conversacion.js';
+
+
+import Conversacion from './models/conversacion.js';
 
 const app = express();
-app.use(express.json());
-app.use('/api/conve', conversacion);
 
-const PORT = process.env.PORT;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-  mongoose
-  .connect("mongodb://127.0.0.1:27017/conversacion")
-  .then(() => console.log("Conectado a MongoDB"))
+app.use(express.json());
+app.use(express.static('public'));
+
+app.use('/api', conversacion);
+
+// conexion a mongodb
+mongoose.connect(process.env.MONGODB_URI)
+.then(() => console.log('Conectado a MongoDB'))
+.catch(err => console.error('Error de conexión a MongoDB:', err));
+
+// Manejo de errores
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Algo salió mal!');
 });
 
+// Iniciar el servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
+});

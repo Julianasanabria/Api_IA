@@ -6,4 +6,4 @@ const ConversationSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
 });
 
-export default mongoose.model('conversacion', ConversationSchema);
+export default mongoose.model('Conversacion', ConversationSchema);
