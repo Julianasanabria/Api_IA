@@ -1,7 +1,7 @@
+import "dotenv/config";
 import express from 'express';
 import mongoose from 'mongoose';
 import conversacion from './routes/conversacion.js';
-import "dotenv/config";
 
 
 import Conversacion from './models/conversacion.js';
@@ -28,4 +28,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
+  console.log(process.env.GEMINI_API_KEY);
 });

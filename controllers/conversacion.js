@@ -56,14 +56,15 @@ Puedes mencionar brevemente las investigaciones actuales sobre el entrenamiento 
 Mantén la coherencia y la lógica en tu razonamiento, proporcionando una perspectiva psicológica informada y accesible sobre este tema.
 Tu objetivo es ofrecer una respuesta perspicaz y fundamentada que corrija malentendidos comunes y explore las implicaciones reales, desde una perspectiva psicológica, de un aumento significativo en la eficiencia de la utilización de los recursos cerebrales."
 `;
+console.log(process.env.GEMINI_API_KEY);
 
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-const model = genAi.getGenerativeModel({model: 'gemini-pro'});
+const model = genAi.getGenerativeModel({model: 'gemini-2.0-flash'});
 // Función simulada para llamar a Gemini (puedes reemplazar con llamada real)
-async function callGeminiAPI(prompt) {
+async function llamadaGeminiAPI(prompt) {
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const resultado = await model.generateContent(prompt);
+    const response = await resultado.response;
     return response.text(); 
     } catch (error) {
       console.log('Error en Gemini:', error);
@@ -83,17 +84,26 @@ getConversationHistory :async (req, res) => {
 },
 
 // Generar respuesta para experto 1
-generateExpert1Response :async (req, res) => {
+generateExpert1Response: async (req, res) => {
   try {
-    const history = await conversacion.find().sort({ timestamp: 1 });
+    const { prompt } = req.body;
+    
+    // Guardar pregunta del usuario
+    const userEntry = new Conversacion({
+      speaker: 'user',
+      message: prompt
+    });
+    await userEntry.save();
+
+    const history = await Conversacion.find().sort({ timestamp: 1 });
     // Crear historial en texto para el prompt
     const historyText = history.map(entry => `${entry.speaker}: ${entry.message}`).join('\n');
-    const prompt = cientificoExpertPrompt.replace('{{conversationHistory}}', historyText);
+    const expertPrompt = cientificoExpertPrompt.replace('{{conversationHistory}}', historyText);
 
-    const answer = await callGeminiAPI(prompt);
+    const respuesta = await llamadaGeminiAPI(expertPrompt);
 
     // Guardar en BD
-    const conversationEntry = new conversacion({ speaker: 'expert1', message: answer });
+    const conversationEntry = new Conversacion({ speaker: 'expert1', message: respuesta });
     await conversationEntry.save();
 
     res.json(conversationEntry);
@@ -105,13 +115,13 @@ generateExpert1Response :async (req, res) => {
 // Generar respuesta para experto 2
 generateExpert2Response : async (req, res) => {
   try {
-    const history = await conversacion.find().sort({ timestamp: 1 });
+    const history = await Conversacion.find().sort({ timestamp: 1 });
     const historyText = history.map(entry => `${entry.speaker}: ${entry.message}`).join('\n');
     const prompt = psicologoExpertPrompt.replace('{{conversationHistory}}', historyText);
 
-    const answer = await callGeminiAPI(prompt);
+    const answer = await llamadaGeminiAPI(prompt);
 
-    const conversationEntry = new conversacion({ speaker: 'expert2', message: answer });
+    const conversationEntry = new Conversacion({ speaker: 'expert2', message: answer });
     await conversationEntry.save();
 
     res.json(conversationEntry);
@@ -123,7 +133,7 @@ generateExpert2Response : async (req, res) => {
 // Limpiar todo el historial
 clearHistory : async (req, res) => {
   try {
-    await conversacion.deleteMany({});
+    await Conversacion.deleteMany({});
     res.json({ message: 'Historial limpiado correctamente' });
   } catch (err) {
     res.status(500).json({ error: 'Error limpiando historial' });
