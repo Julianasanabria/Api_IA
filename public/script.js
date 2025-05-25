@@ -14,9 +14,9 @@ function agregarMensaje(texto, tipoUsuario) {
     if (tipoUsuario === 2) icono = '🧠';
 
     const div = document.createElement('div');
-    div.className = `message user${user}`;
+    div.className = `message user${tipoUsuario}`;
     div.innerHTML = `
-        <div class="icon">${user === 1 ? '🧑' : '🧑‍💼'}</div>
+        <div class="icon">${icono}</div>
         <div class="bubble">${texto}</div>
     `;
     chat.appendChild(div);
@@ -31,7 +31,7 @@ function limpiarChat() {
 async function cargarHistorial() {
     limpiarChat();
     try {
-        const res = await fetch('/api/history');
+        const res = await fetch('http://localhost:3000/api/history');
         if (!res.ok) {
             throw new Error('Error al cargar el historial');
         }
@@ -57,7 +57,7 @@ btnEnviar.onclick = async () => {
     
     try {
         // Obtener respuesta del experto 1
-        const res1 = await fetch('/api/expert1', {
+        const res1 = await fetch('http://localhost:3000/api/expert1', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -70,7 +70,7 @@ btnEnviar.onclick = async () => {
         agregarMensaje(data1.message, 1);
 
         // Obtener respuesta del experto 2
-        const res2 = await fetch('/api/expert2', {
+        const res2 = await fetch('http://localhost:3000/api/expert2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -95,11 +95,11 @@ btn1.onclick = async () => {
     try {
         const prompt = promptInput.value;
         if (!prompt) {
-            throw new Error('Por favor escribe una pregunta');
+            throw new Error('Por favor escribe una pregunta', 1);
         }
         agregarMensaje(prompt, 1); // Mostrar pregunta del usuario
         
-        const res = await fetch('/api/expert1', {
+        const res = await fetch('http://localhost:3000/api/expert1', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -126,7 +126,7 @@ btn2.onclick = async () => {
             throw new Error("Por favor, ingresa tu pregunta.");
         }
 
-        const res = await fetch('/api/expert2', {
+        const res = await fetch('http://localhost:3000/api/expert2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -148,10 +148,13 @@ btn2.onclick = async () => {
 // Limpiar historial en backend y frontend
 btnLimpiar.onclick = async () => {
     try {
-        const res = await fetch('/api/clear', { method: 'DELETE' });
+        const res = await fetch('http://localhost:3000/api/clear', { method: 'DELETE' });
         if (!res.ok) {
             throw new Error('Error al limpiar el historial');
         }
+        const data = await res.json();
+        agregarMensaje(data.message, 1);
+
         // Limpiar el chat en la interfaz
         limpiarChat();
     } catch (err) {

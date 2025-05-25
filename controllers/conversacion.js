@@ -59,7 +59,7 @@ Tu objetivo es ofrecer una respuesta perspicaz y fundamentada que corrija malent
 console.log(process.env.GEMINI_API_KEY);
 
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-const model = genAi.getGenerativeModel({model: 'gemini-2.0-flash'});
+const model = genAi.getGenerativeModel({model: 'gemini-1.5-flash'});
 // Función simulada para llamar a Gemini (puedes reemplazar con llamada real)
 async function llamadaGeminiAPI(prompt) {
   try {
@@ -83,17 +83,30 @@ getConversationHistory :async (req, res) => {
   }
 },
 
+saveUserQuestion: async (req, res) => {
+  try {
+    const {prompt} = req.body;
+    const entry = new Conversacion ({
+      speaker: "user",
+      message: prompt
+    });
+    await entry.save();
+    res.json(entry); 
+  } catch (error) {
+    res.status(500).json({error: 'errror al guardar la pregunta'})
+  }
+},
+
 // Generar respuesta para experto 1
 generateExpert1Response: async (req, res) => {
   try {
-    const { prompt } = req.body;
-    
-    // Guardar pregunta del usuario
-    const userEntry = new Conversacion({
-      speaker: 'user',
+
+    /* const {prompt} = req.body;
+    const usuarioEntry = new Conversacion ({
+      speaker: "user",
       message: prompt
     });
-    await userEntry.save();
+    await usuarioEntry.save(); */
 
     const history = await Conversacion.find().sort({ timestamp: 1 });
     // Crear historial en texto para el prompt
@@ -108,7 +121,8 @@ generateExpert1Response: async (req, res) => {
 
     res.json(conversationEntry);
   } catch (err) {
-    res.status(500).json({ error: 'Error generando respuesta experto 1' });
+    console.error('Error detallado:', err);
+    res.status(500).json({ error: err.message });
   }
 },
 

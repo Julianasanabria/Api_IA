@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from 'express';
 import mongoose from 'mongoose';
 import conversacion from './routes/conversacion.js';
-
+import cors from 'cors'
 
 import Conversacion from './models/conversacion.js';
 
@@ -11,7 +11,14 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
+app.use(cors({
+  origin: "http://127.0.0.1:5500",
+  methods: ['GET', 'POST', 'DELETE']
+}));
+
 app.use('/api', conversacion);
+
+
 
 // conexion a mongodb
 mongoose.connect(process.env.MONGODB_URI)
