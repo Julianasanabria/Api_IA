@@ -2,23 +2,36 @@ import "dotenv/config";
 import express from 'express';
 import mongoose from 'mongoose';
 import conversacion from './routes/conversacion.js';
-import cors from 'cors'
-
-import Conversacion from './models/conversacion.js';
+import cors from 'cors';
 
 const app = express();
+
+// Configuración de CORS específica
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:5500', 'http://localhost:5500'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json());
 app.use(express.static('public'));
 
-app.use(cors({
-  origin: "http://127.0.0.1:5500",
-  methods: ['GET', 'POST', 'DELETE']
-}));
+// Middleware de logging mejorado
+app.use((req, res, next) => {
+    console.log('Nueva petición:');
+    console.log(`Método: ${req.method}`);
+    console.log(`URL: ${req.url}`);
+    if (req.body) console.log('Body:', JSON.stringify(req.body, null, 2));
+    next();
+});
 
+// Rutas
 app.use('/api', conversacion);
 
-
+// Ruta de prueba
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'API funcionando correctamente' });
+});
 
 // conexion a mongodb
 mongoose.connect(process.env.MONGODB_URI)

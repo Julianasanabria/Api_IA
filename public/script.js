@@ -5,170 +5,103 @@ const btn1 = document.getElementById('respuesta1');
 const btn2 = document.getElementById('respuesta2');
 const btnLimpiar = document.getElementById('limpiar');
 const btnPDF = document.getElementById('pdf');
-const promptInput = document.getElementById('promptInput');
-const btnEnviar = document.getElementById('enviar');
+
+// Función para obtener el ícono según el tipo de experto
+function obtenerIcono(tipoUsuario) {
+    const experto = tipoUsuario === 1 ? expert1.value : expert2.value;
+    return experto === 'Cientifico' ? '👨‍🔬' : '👨‍⚕️';
+}
+
+async function hacerPeticion(speaker, mensaje) {
+    try {
+        console.log('Enviando petición:', { speaker, mensaje });
+        
+        const response = await fetch('http://localhost:3000/api/chat', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                speaker,
+                expert1: expert1.value,
+                expert2: expert2.value,
+                message: mensaje || "la eutanacia es un tema controvertido que involucra consideraciones éticas, legales y personales. ¿Qué opinas al respecto? cientifico opina que si .. y psicologo opina que no",
+            })
+        });
+
+        // Log de la respuesta
+        console.log('Estado de la respuesta:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error detallado:', errorText);
+            throw new Error(`Error del servidor: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Respuesta exitosa:', data);
+        return data;
+    } catch (error) {
+        console.error('Error detallado:', error);
+        throw error;
+    }
+}
 
 function agregarMensaje(texto, tipoUsuario) {
-    let icono = '👤';
-    if (tipoUsuario === 1) icono = '🔬';
-    if (tipoUsuario === 2) icono = '🧠';
-
     const div = document.createElement('div');
     div.className = `message user${tipoUsuario}`;
     div.innerHTML = `
-        <div class="icon">${icono}</div>
+        <div class="icon">${obtenerIcono(tipoUsuario)}</div>
         <div class="bubble">${texto}</div>
     `;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
 }
 
-function limpiarChat() {
-    chat.innerHTML = '';
-}
-
-// Llama a la API para obtener el historial y mostrarlo al cargar
-async function cargarHistorial() {
-    limpiarChat();
-    try {
-        const res = await fetch('http://localhost:3000/api/history');
-        if (!res.ok) {
-            throw new Error('Error al cargar el historial');
-        }
-        const data = await res.json();
-        data.forEach(msg => {
-            agregarMensaje(msg.message, msg.speaker === 'expert1' ? 1 : 2);
-        });
-    } catch (err) {
-        agregarMensaje('Error al cargar el historial', 1);
-        console.error('Error al cargar el historial:', err);
-    }
-}
-
-// enviar pregunta
-btnEnviar.onclick = async () => {
-    const prompt = promptInput.value;
-    if (!prompt){
-        agregarMensaje('Por favor escribe una pregunta', 1);
-        return;
-    }
-    // Mostrar la pregunta del usuario
-    agregarMensaje(prompt, 1);
-    
-    try {
-        // Obtener respuesta del experto 1
-        const res1 = await fetch('http://localhost:3000/api/expert1', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt
-            })
-        });
-        
-        if (!res1.ok) throw new Error('Error en respuesta del experto 1');
-        const data1 = await res1.json();
-        agregarMensaje(data1.message, 1);
-
-        // Obtener respuesta del experto 2
-        const res2 = await fetch('http://localhost:3000/api/expert2', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt
-            })
-        });
-        
-        if (!res2.ok) throw new Error('Error en respuesta del experto 2');
-        const data2 = await res2.json();
-        agregarMensaje(data2.message, 2);
-
-        // Limpiar el input después de las respuestas
-        promptInput.value = '';
-    } catch (err) {
-        agregarMensaje('Error: ' + err.message, 1);
-        console.error('Error:', err);
-    }
-}
-
-// Respuesta individual del experto 1
 btn1.onclick = async () => {
     try {
-        const prompt = promptInput.value;
-        if (!prompt) {
-            throw new Error('Por favor escribe una pregunta', 1);
+        btn1.disabled = true;
+        const mensaje = chat.children.length === 0 ? null : 
+            chat.lastElementChild?.querySelector('.bubble')?.textContent;
+            
+        const data = await hacerPeticion('expert1', mensaje);
+        if (data.response) {
+            agregarMensaje(data.response, 1);
+            btn2.disabled = false;
         }
-        agregarMensaje(prompt, 1); // Mostrar pregunta del usuario
-        
-        const res = await fetch('http://localhost:3000/api/expert1', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt,
-                expert: expert1.value
-            })
-        });
-        
-        if (!res.ok) throw new Error('Error al obtener respuesta del experto 1');
-        const data = await res.json();
-        agregarMensaje(data.message, 1);
-        promptInput.value = '';
     } catch (err) {
         agregarMensaje(err.message, 1);
-        console.error('Error:', err);
+    } finally {
+        btn1.disabled = false;
     }
 };
 
-// Llama a la API para obtener respuesta del experto 2
 btn2.onclick = async () => {
     try {
-        const prompt = promptInput.value;
-        if (!prompt) {
-            throw new Error("Por favor, ingresa tu pregunta.");
+        btn2.disabled = true;
+        const mensaje = chat.lastElementChild?.querySelector('.bubble')?.textContent;
+        
+        const data = await hacerPeticion('expert2', mensaje);
+        if (data.response) {
+            agregarMensaje(data.response, 2);
+            btn1.disabled = false;
         }
-        agregarMensaje(prompt, 2); // Mostrar pregunta del usuario
-
-        const res = await fetch('http://localhost:3000/api/expert2', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt
-            })
-        });
-        if (!res.ok) {
-            throw new Error('Error al obtener respuesta del experto 2');
-        }
-        const data = await res.json();
-        agregarMensaje(data.message, 2);
-        promptInput.value = '';
     } catch (err) {
-        agregarMensaje('Error al obtener respuesta del experto 2', 2);
-        console.error('Error al obtener respuesta del experto 2:', err);
-    }
-}
-
-// Limpiar historial en backend y frontend
-btnLimpiar.onclick = async () => {
-    try {
-        const res = await fetch('http://localhost:3000/api/clear', { method: 'DELETE' });
-        if (!res.ok) {
-            throw new Error('Error al limpiar el historial');
-        }
-        const data = await res.json();
-        agregarMensaje(data.message, 1);
-
-        // Limpiar el chat en la interfaz
-        limpiarChat();
-    } catch (err) {
-        agregarMensaje('Error al limpiar el historial', 1);
-        console.error('Error al limpiar el historial:', err);
+        agregarMensaje(err.message, 2);
+    } finally {
+        btn2.disabled = false;
     }
 };
 
-// Exportar a PDF (simple, usando print)
-btnPDF.onclick = () => {
-    window.print();
+// Limpiar historial del chat
+btnLimpiar.onclick = () => {
+    chat.innerHTML = '';
+    btn1.disabled = false;
+    btn2.disabled = true;
 };
 
-// Al cargar la página, muestra el historial
-cargarHistorial();
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+    btn2.disabled = true;
+});
 
