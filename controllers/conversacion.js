@@ -29,7 +29,8 @@ Evita caer en la fantasía o la pseudociencia, basando tus argumentos en los pri
 Puedes mencionar brevemente las investigaciones actuales sobre la plasticidad cerebral y las estrategias para optimizar la función cognitiva dentro de los límites biológicos conocidos, destacando la importancia de la educación, el ejercicio y la estimulación cognitiva.
 
 Mantén la coherencia y la lógica en tu razonamiento, proporcionando una explicación clara y accesible que no solo corrija el mito del 10% del cerebro, sino que también explique de manera realista las implicaciones de una mayor eficiencia en la utilización de la capacidad cerebral. Tu objetivo es proporcionar una respuesta clara, concisa y basada en la evidencia científica, que no solo informe, sino que también inspire a otros a explorar el fascinante mundo de la neurociencia cognitiva.
-`;
+
+IMPORTANTE: Limita tus respuestas a un máximo de 3-4 párrafos concisos y mantén un tono directo y profesional.`;
 
 const psicologoExpertPrompt = `
 "Actúa como un Psicólogo cognitivo y neurocientífico de renombre internacional, con una profunda experiencia en el estudio de las capacidades cognitivas humanas, el potencial del aprendizaje y la relación entre la función cerebral y el comportamiento. Tu investigación se ha centrado en comprender los límites y el alcance de las habilidades cognitivas, la plasticidad cerebral y los mitos populares sobre el funcionamiento de la mente.
@@ -55,7 +56,8 @@ Evita caer en la especulación sin fundamento científico y mantén tus argument
 Puedes mencionar brevemente las investigaciones actuales sobre el entrenamiento cognitivo, la neurofeedback y otras técnicas que buscan optimizar la función cerebral dentro de los límites biológicos.
 Mantén la coherencia y la lógica en tu razonamiento, proporcionando una perspectiva psicológica informada y accesible sobre este tema.
 Tu objetivo es ofrecer una respuesta perspicaz y fundamentada que corrija malentendidos comunes y explore las implicaciones reales, desde una perspectiva psicológica, de un aumento significativo en la eficiencia de la utilización de los recursos cerebrales."
-`;
+
+IMPORTANTE: Limita tus respuestas a un máximo de 3-4 párrafos concisos y mantén un tono directo y profesional.`;
 console.log(process.env.GEMINI_API_KEY);
 
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
@@ -65,7 +67,14 @@ async function llamadaGeminiAPI(prompt) {
   try {
     const resultado = await model.generateContent(prompt);
     const response = await resultado.response;
-    return response.text(); 
+    let text = response.text();
+    
+    const maxLength = 700;
+    if (text.length > maxLength){
+      const ultimoPunto = text.lastIndexOf('.', maxLength);
+      text = text.substring(0, ultimoPunto + 1);
+    }
+    return text;
     } catch (error) {
       console.log('Error en Gemini:', error);
       throw new Error('Error en la llamada a Gemini API');
@@ -101,19 +110,10 @@ saveUserQuestion: async (req, res) => {
 generateExpert1Response: async (req, res) => {
   try {
 
-    /* const {prompt} = req.body;
-    const usuarioEntry = new Conversacion ({
-      speaker: "user",
-      message: prompt
-    });
-    await usuarioEntry.save(); */
+    const { prompt } = req.body;
+    const instruccion = `Responde brevemente (máximo 3-4 párrafos) a la siguiente pregunta desde tu perspectiva como científico: ${prompt}`
 
-    const history = await Conversacion.find().sort({ timestamp: 1 });
-    // Crear historial en texto para el prompt
-    const historyText = history.map(entry => `${entry.speaker}: ${entry.message}`).join('\n');
-    const expertPrompt = cientificoExpertPrompt.replace('{{conversationHistory}}', historyText);
-
-    const respuesta = await llamadaGeminiAPI(expertPrompt);
+    const respuesta = await llamadaGeminiAPI(instruccion);
 
     // Guardar en BD
     const conversationEntry = new Conversacion({ speaker: 'expert1', message: respuesta });
@@ -129,11 +129,10 @@ generateExpert1Response: async (req, res) => {
 // Generar respuesta para experto 2
 generateExpert2Response : async (req, res) => {
   try {
-    const history = await Conversacion.find().sort({ timestamp: 1 });
-    const historyText = history.map(entry => `${entry.speaker}: ${entry.message}`).join('\n');
-    const prompt = psicologoExpertPrompt.replace('{{conversationHistory}}', historyText);
+    const { prompt } = req.body;
+    const instruccion = `Responde brevemente (máximo 3-4 párrafos) a la siguiente pregunta desde tu perspectiva como psicólogo: ${prompt}`;
 
-    const answer = await llamadaGeminiAPI(prompt);
+    const answer = await llamadaGeminiAPI(instruccion);
 
     const conversationEntry = new Conversacion({ speaker: 'expert2', message: answer });
     await conversationEntry.save();

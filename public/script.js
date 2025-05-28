@@ -125,6 +125,7 @@ btn2.onclick = async () => {
         if (!prompt) {
             throw new Error("Por favor, ingresa tu pregunta.");
         }
+        agregarMensaje(prompt, 2); // Mostrar pregunta del usuario
 
         const res = await fetch('http://localhost:3000/api/expert2', {
             method: 'POST',
