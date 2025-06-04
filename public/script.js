@@ -1,23 +1,36 @@
 const chat = document.getElementById('chat');
-const expert1 = document.getElementById('expert1');
-const expert2 = document.getElementById('expert2');
 const btn1 = document.getElementById('respuesta1');
 const btn2 = document.getElementById('respuesta2');
 const btnLimpiar = document.getElementById('limpiar');
 const btnPDF = document.getElementById('pdf');
-const promptInput = document.getElementById('promptInput');
-const btnEnviar = document.getElementById('enviar');
+
+let debateActive = false;
+let turno = 0;
+const preguntaBase = "¿Qué sucedería si los humanos pudiéramos utilizar el 100% de nuestra capacidad cerebral? Desmitifica esta creencia y explica las implicaciones realistas.";
 
 function agregarMensaje(texto, tipoUsuario) {
     let icono = '👤';
-    if (tipoUsuario === 1) icono = '🔬';
-    if (tipoUsuario === 2) icono = '🧠';
+    let nombre = 'Usuario';
+    
+    if (tipoUsuario === 0) {
+        icono = '❓';
+        nombre = 'Sistema';
+    } else if (tipoUsuario === 1) {
+        icono = '🔬';
+        nombre = 'Científico';
+    } else if (tipoUsuario === 2) {
+        icono = '🧠';
+        nombre = 'Psicólogo';
+    }
 
     const div = document.createElement('div');
     div.className = `message user${tipoUsuario}`;
     div.innerHTML = `
         <div class="icon">${icono}</div>
-        <div class="bubble">${texto}</div>
+        <div class="bubble">
+            <strong>${nombre}:</strong><br>
+            ${texto}
+        </div>
     `;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
@@ -27,148 +40,156 @@ function limpiarChat() {
     chat.innerHTML = '';
 }
 
-// Llama a la API para obtener el historial y mostrarlo al cargar
-async function cargarHistorial() {
-    limpiarChat();
-    try {
-        const res = await fetch('http://localhost:3000/api/history');
-        if (!res.ok) {
-            throw new Error('Error al cargar el historial');
-        }
-        const data = await res.json();
-        data.forEach(msg => {
-            agregarMensaje(msg.message, msg.speaker === 'expert1' ? 1 : 2);
-        });
-    } catch (err) {
-        agregarMensaje('Error al cargar el historial', 1);
-        console.error('Error al cargar el historial:', err);
+function actualizarIndicadorTurno() {
+    const indicator = document.getElementById('turnoIndicador');
+    if (turno === 0) {
+        indicator.textContent = 'Debate no iniciado';
+        indicator.className = 'turno-indicador';
+    } else if (turno === 1) {
+        indicator.textContent = 'Turno: Científico';
+        indicator.className = 'turno-indicador cientifico';
+    } else {
+        indicator.textContent = 'Turno: Psicólogo';
+        indicator.className = 'turno-indicador psicologo';
     }
 }
 
-// enviar pregunta
-btnEnviar.onclick = async () => {
-    const prompt = promptInput.value;
-    if (!prompt){
-        agregarMensaje('Por favor escribe una pregunta', 1);
-        return;
-    }
-    // Mostrar la pregunta del usuario
-    agregarMensaje(prompt, 1);
-    
+async function obtenerUltimoMensaje() {
     try {
+        const res = await fetch('http://localhost:3000/api/historial');
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || 'Error en el servidor');
+        }
+        const data = await res.json();
+        return data.length > 0 ? data[data.length - 1].message : preguntaBase;
+    } catch (err) {
+        console.error('Error al obtener último mensaje:', err);
+        agregarMensaje(`Error: ${err.message}`, 0);
+        return preguntaBase;
+    }
+}
+
+async function iniciarDebate() {
+    try {
+        debateActive = true;
+        turno = 1;
+        actualizarIndicadorTurno();
+        limpiarChat();
+        
+        // Agregar título del debate
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'debate-title';
+        titleDiv.textContent = 'Debate: Capacidad Cerebral Humana';
+        chat.appendChild(titleDiv);
+        
+        // Agregar pregunta base al chat
+        agregarMensaje(preguntaBase, 0);
+        
         // Obtener respuesta del experto 1
-        const res1 = await fetch('http://localhost:3000/api/expert1', {
+        const res1 = await fetch('http://localhost:3000/api/experto1', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt
-            })
+            body: JSON.stringify({ prompt: preguntaBase })
         });
         
-        if (!res1.ok) throw new Error('Error en respuesta del experto 1');
+        if (!res1.ok) {
+            const errorData = await res1.json();
+            throw new Error(errorData.error || 'Error en experto 1');
+        }
+        
         const data1 = await res1.json();
         agregarMensaje(data1.message, 1);
-
-        // Obtener respuesta del experto 2
-        const res2 = await fetch('http://localhost:3000/api/expert2', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt
-            })
-        });
         
-        if (!res2.ok) throw new Error('Error en respuesta del experto 2');
-        const data2 = await res2.json();
-        agregarMensaje(data2.message, 2);
-
-        // Limpiar el input después de las respuestas
-        promptInput.value = '';
+        // Cambiar turno al experto 2
+        turno = 2;
+        actualizarIndicadorTurno();
+        
     } catch (err) {
-        agregarMensaje('Error: ' + err.message, 1);
-        console.error('Error:', err);
+        agregarMensaje(`Error al iniciar debate: ${err.message}`, 0);
+        console.error('Error al iniciar debate:', err);
+        debateActive = false;
+        turno = 0;
+        actualizarIndicadorTurno();
     }
 }
 
-// Respuesta individual del experto 1
-btn1.onclick = async () => {
+async function responderExperto(expertoId) {
     try {
-        const prompt = promptInput.value;
-        if (!prompt) {
-            throw new Error('Por favor escribe una pregunta', 1);
-        }
-        agregarMensaje(prompt, 1); // Mostrar pregunta del usuario
+        const ultimoMensaje = await obtenerUltimoMensaje();
+        const endpoint = expertoId === 1 ? 'experto1' : 'experto2';
         
-        const res = await fetch('http://localhost:3000/api/expert1', {
+        const res = await fetch(`http://localhost:3000/api/${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt,
-                expert: expert1.value
-            })
+            body: JSON.stringify({ prompt: ultimoMensaje })
         });
         
-        if (!res.ok) throw new Error('Error al obtener respuesta del experto 1');
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || `Error en experto ${expertoId}`);
+        }
+        
         const data = await res.json();
-        agregarMensaje(data.message, 1);
-        promptInput.value = '';
+        agregarMensaje(data.message, expertoId);
+        
+        // Alternar turno
+        turno = expertoId === 1 ? 2 : 1;
+        actualizarIndicadorTurno();
+        
     } catch (err) {
-        agregarMensaje(err.message, 1);
-        console.error('Error:', err);
+        agregarMensaje(`Error en experto: ${err.message}`, 0);
+        console.error(`Error en experto ${expertoId}:`, err);
+    }
+}
+
+// Eventos de botones
+btn1.onclick = async () => {
+    if (!debateActive) {
+        await iniciarDebate();
+    } else if (turno === 1) {
+        await responderExperto(1);
+    } else {
+        agregarMensaje('Espera el turno científico', 0);
     }
 };
 
-// Llama a la API para obtener respuesta del experto 2
 btn2.onclick = async () => {
-    try {
-        const prompt = promptInput.value;
-        if (!prompt) {
-            throw new Error("Por favor, ingresa tu pregunta.");
-        }
-        agregarMensaje(prompt, 2); // Mostrar pregunta del usuario
-
-        const res = await fetch('http://localhost:3000/api/expert2', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: prompt
-            })
-        });
-        if (!res.ok) {
-            throw new Error('Error al obtener respuesta del experto 2');
-        }
-        const data = await res.json();
-        agregarMensaje(data.message, 2);
-        promptInput.value = '';
-    } catch (err) {
-        agregarMensaje('Error al obtener respuesta del experto 2', 2);
-        console.error('Error al obtener respuesta del experto 2:', err);
+    if (!debateActive) {
+        await iniciarDebate();
+    } else if (turno === 2) {
+        await responderExperto(2);
+    } else {
+        agregarMensaje('Espera el turno psicólogo', 0);
     }
-}
+};
 
-// Limpiar historial en backend y frontend
 btnLimpiar.onclick = async () => {
     try {
-        const res = await fetch('http://localhost:3000/api/clear', { method: 'DELETE' });
+        const res = await fetch('http://localhost:3000/api/limpiar', { method: 'DELETE' });
+        
         if (!res.ok) {
-            throw new Error('Error al limpiar el historial');
+            const errorData = await res.json();
+            throw new Error(errorData.error || 'Error al limpiar');
         }
+        
         const data = await res.json();
-        agregarMensaje(data.message, 1);
-
-        // Limpiar el chat en la interfaz
         limpiarChat();
+        debateActive = false;
+        turno = 0;
+        actualizarIndicadorTurno();
+        //agregarMensaje('Debate reiniciado. Presiona un botón de experto para comenzar.', 0);
+        agregarMensaje(data.message, 0);
+        
     } catch (err) {
-        agregarMensaje('Error al limpiar el historial', 1);
-        console.error('Error al limpiar el historial:', err);
+        agregarMensaje(`Error al reiniciar: ${err.message}`, 0);
+        console.error('Error al reiniciar:', err);
     }
 };
 
-// Exportar a PDF (simple, usando print)
 btnPDF.onclick = () => {
     window.print();
 };
 
-// Al cargar la página, muestra el historial
-cargarHistorial();
-
+// Al cargar la página
+actualizarIndicadorTurno();
